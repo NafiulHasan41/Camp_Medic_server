@@ -73,6 +73,7 @@ async function run() {
   
   
       const userCollection = client.db("MediCampDB").collection("users");
+      const campsCollection = client.db("MediCampDB").collection("medicalCamps");
     
  
       app.get('/users/admin/:email',verifyToken,  async (req, res) => {
@@ -108,6 +109,15 @@ async function run() {
 
   
           //   user section end 
+
+          //camp operation
+
+          app.get("/popular_camps", async (req, res) => {
+
+            const result = await campsCollection.find().sort({ "ParticipantCount": -1 }).limit(6).toArray();
+            res.send(result);
+            
+          });
   
          
   
