@@ -39,6 +39,7 @@ const verifyToken = (req, res, next) => {
             return res.status(401).send({ message: 'unauthorized access' })
         }
         req.decoded = decoded;
+        
         next();
     })
 }
@@ -116,6 +117,15 @@ async function run() {
 
             const result = await campsCollection.find().sort({ "ParticipantCount": -1 }).limit(6).toArray();
             res.send(result);
+            
+          });
+
+          app.get("/camp-details/:campId", verifyToken ,async (req, res) => {
+            const campId = req.params.campId;
+            const query = { _id: new ObjectId(campId) };
+            const result = await campsCollection.findOne(query);
+            res.send(result);
+           
             
           });
   
