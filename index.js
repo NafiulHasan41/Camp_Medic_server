@@ -154,6 +154,60 @@ async function run() {
             res.send(result);
 
           });
+
+          //all available camps
+
+          app.get("/camps" , async (req, res) => {
+
+            const size = parseInt(req.query.size)
+            const page = parseInt(req.query.page) - 1
+            const sort = req.query.sort
+            const search = req.query.search
+
+            let query = {
+                $or: [
+                    { CampName: { $regex: search, $options: 'i' } },
+                    { CampFees: { $regex: search, $options: 'i' } },
+                    { Date: { $regex: search, $options: 'i' } },
+                    { Location: { $regex: search, $options: 'i' } },
+                ],
+            };
+              
+            let sortObj = {};
+            if (sort === 'Most Registered') {
+                sortObj = { ParticipantCount: -1 };
+            } else if (sort === 'Camp Fees') {
+                sortObj = { CampFees: 1 };
+            } else if (sort === 'Alphabetical Order') {
+                sortObj = { CampName: 1 };
+            }
+            const camps = await campsCollection.find(query).sort(sortObj).skip(page * size).limit(size).toArray();
+
+            res.send(camps);
+            console.log(camps);
+
+
+            
+          });
+
+          //getting camps count for pagination
+
+          app.get("/camps_count" , async (req, res) => {
+            const search = req.query.search
+            let query = {
+                $or: [
+                    { CampName: { $regex: search, $options: 'i' } },
+                    { CampFees: { $regex: search, $options: 'i' } },
+                    { Date: { $regex: search, $options: 'i' } },
+                    { Location: { $regex: search, $options: 'i' } },
+                ],
+            };
+
+            const count = await campsCollection.countDocuments(query);
+
+            res.send({ count });
+
+          });
   
          
   
