@@ -75,6 +75,7 @@ async function run() {
   
       const userCollection = client.db("MediCampDB").collection("users");
       const campsCollection = client.db("MediCampDB").collection("medicalCamps");
+      const participantCollection = client.db("MediCampDB").collection("Participant");
     
  
       app.get('/users/admin/:email',verifyToken,  async (req, res) => {
@@ -127,6 +128,31 @@ async function run() {
             res.send(result);
            
             
+          });
+        //join camp operation 
+          app.post('/join-camp', verifyToken, async (req, res) => {
+             
+            const participant = req.body;
+
+            // console.log(participant);
+            const query = { ParticipantEmail: participant.ParticipantEmail ,
+                CampId: participant.CampId
+             }
+            const existingParticipant = await participantCollection.findOne(query);
+            if (existingParticipant) {
+              return res.send({ message: 'user already exists', insertedId: null })
+            }
+           
+            const result = await participantCollection.insertOne(participant);
+            // console.log('result', result)
+
+            // Increase the number of participants in the camp
+           const campQuery = { _id: new ObjectId(participant.CampId) };
+           const update = { $inc: { ParticipantCount: 1 } };
+          const result1 =  await campsCollection.updateOne(campQuery, update);
+            // console.log('result1', result1);
+            res.send(result);
+
           });
   
          
