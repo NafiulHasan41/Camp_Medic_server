@@ -218,6 +218,11 @@ async function run() {
             const result = await campsCollection.insertOne(camp);
             res.send(result);
           });
+
+          app.get("/all-camps", verifyToken, verifyAdmin, async (req, res) => {
+            const result = await campsCollection.find().toArray();
+            res.send(result);
+          });
   
          
   
