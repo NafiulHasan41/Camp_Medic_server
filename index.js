@@ -173,6 +173,7 @@ async function run() {
                     { CampFees: { $regex: search, $options: 'i' } },
                     { Date: { $regex: search, $options: 'i' } },
                     { Location: { $regex: search, $options: 'i' } },
+                    { HealthcareProfessional: { $regex: search, $options: 'i' } },
                 ],
             };
               
@@ -185,9 +186,9 @@ async function run() {
                 sortObj = { CampName: 1 };
             }
             const camps = await campsCollection.find(query).sort(sortObj).skip(page * size).limit(size).toArray();
-
-            res.send(camps);
             // console.log(camps);
+            res.send(camps);
+           
 
 
             
