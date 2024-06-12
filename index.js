@@ -321,7 +321,7 @@ async function run() {
           res.send(result);
         });
 
-        
+
         // update confirmation status
         app.patch("/confirm-participant/:campId", verifyToken , verifyAdmin , async (req, res) => {
           const id = req.params.campId;
@@ -334,6 +334,24 @@ async function run() {
             }
            }
           const result = await participantCollection.updateOne(query, update);
+          res.send(result);
+        });
+
+
+        //update user 
+
+        app.patch("/user-update", verifyToken, async (req, res) => {
+          const user = req.body;
+          // console.log(user);
+          const query = { email: user.email }
+          const update = { 
+            $set: {
+              ...user
+          
+            }
+           }
+          const result = await userCollection.updateOne(query, update);
+          // console.log('result', result);
           res.send(result);
         });
   
