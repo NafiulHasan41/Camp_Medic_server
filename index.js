@@ -261,7 +261,81 @@ async function run() {
             console.log('result2', result2);
             res.send(result);
           });
+         
+        // getting all the participants registered for a camp
 
+        app.get("/participant" , verifyToken, verifyAdmin, async (req, res) => {
+
+          const size = parseInt(req.query.size)
+          const page = parseInt(req.query.page) - 1
+          const sort = req.query.sort
+          const search = req.query.search
+
+          let query = {
+              $or: [
+                  { ParticipantName: { $regex: search, $options: 'i' } },
+                  { ParticipantEmail: { $regex: search, $options: 'i' } },
+                  { ParticipantPhone: { $regex: search, $options: 'i' } },
+                  { CampName: { $regex: search, $options: 'i' } },
+                  { CampFees: { $regex: search, $options: 'i' } },
+                  {PaymentStatus: { $regex: search, $options: 'i' } },
+                  {ConfirmationStatus: { $regex: search, $options: 'i' } },
+              ],
+          };
+  
+          const camps = await participantCollection.find(query).skip(page * size).limit(size).toArray();
+          // console.log(camps);
+          res.send(camps);
+
+
+        });
+
+        //getting participants count for pagination
+
+        app.get("/participant_count" ,verifyToken , verifyAdmin , async (req, res) => {
+          const search = req.query.search
+          let query = {
+              $or: [
+                  { ParticipantName: { $regex: search, $options: 'i' } },
+                  { ParticipantEmail: { $regex: search, $options: 'i' } },
+                  { ParticipantPhone: { $regex: search, $options: 'i' } },
+                  { CampName: { $regex: search, $options: 'i' } },
+                  { CampFees: { $regex: search, $options: 'i' } },
+                  {PaymentStatus: { $regex: search, $options: 'i' } },
+                  {ConfirmationStatus: { $regex: search, $options: 'i' } },
+              ],
+          };
+
+          const count = await participantCollection.countDocuments(query);
+
+          res.send({ count });
+
+        });
+
+        // delete participant by admin
+
+        app.delete("/delete-participant/:campId", verifyToken , verifyAdmin , async (req, res) => {
+          const id = req.params.campId;
+          const query = { _id: new ObjectId(id) }
+          const result = await participantCollection.deleteOne(query);
+          res.send(result);
+        });
+
+        
+        // update confirmation status
+        app.patch("/confirm-participant/:campId", verifyToken , verifyAdmin , async (req, res) => {
+          const id = req.params.campId;
+         
+          const query = { _id: new ObjectId(id) }
+          const update = { 
+            $set: {
+              ConfirmationStatus: "Confirmed",
+          
+            }
+           }
+          const result = await participantCollection.updateOne(query, update);
+          res.send(result);
+        });
   
          
   
