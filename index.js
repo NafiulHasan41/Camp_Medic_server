@@ -220,10 +220,18 @@ async function run() {
             res.send(result);
           });
 
-          app.get("/all-camps", verifyToken, verifyAdmin, async (req, res) => {
-            const result = await campsCollection.find().toArray();
-            res.send(result);
-          });
+            //deletion of camps 
+
+            app.delete('/delete-camp/:campId', verifyToken, verifyAdmin, async (req, res) => {
+              const id = req.params.campId;
+              const query = { _id: new ObjectId(id) }
+              const queryParticipant = { CampId: id }
+              const result = await campsCollection.deleteOne(query);
+              const result2 = await participantCollection.deleteOne(queryParticipant);
+              console.log('result2', result2)
+              res.send(result);
+            })
+
   
          
   
