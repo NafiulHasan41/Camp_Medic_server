@@ -320,6 +320,18 @@ async function run() {
         app.delete("/delete-participant/:campId", verifyToken  , async (req, res) => {
           const id = req.params.campId;
           const query = { _id: new ObjectId(id) }
+
+
+          const participant = await participantCollection.findOne(query);
+          if (!participant) {
+              return res.status(404).send('Participant not found');
+          }
+      
+          // Decrement the ParticipantCount in the camp document
+          const campQuery = { _id: new ObjectId(participant.CampId) };
+          const update = { $inc: { ParticipantCount: -1 } };
+          await campsCollection.updateOne(campQuery, update);
+
           const result = await participantCollection.deleteOne(query);
           res.send(result);
         });
