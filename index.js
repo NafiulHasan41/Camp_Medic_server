@@ -1,8 +1,10 @@
 const express = require('express');
 const app = express();
+require('dotenv').config();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 //database 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -66,6 +68,7 @@ async function run() {
       const userCollection = client.db("MediCampDB").collection("users");
       const campsCollection = client.db("MediCampDB").collection("medicalCamps");
       const participantCollection = client.db("MediCampDB").collection("Participant");
+      const paymentCollection = client.db("MediCampDB").collection("payments");
 
 
       // use verify admin after verifyToken
@@ -314,7 +317,7 @@ async function run() {
 
         // delete participant by admin
 
-        app.delete("/delete-participant/:campId", verifyToken , verifyAdmin , async (req, res) => {
+        app.delete("/delete-participant/:campId", verifyToken  , async (req, res) => {
           const id = req.params.campId;
           const query = { _id: new ObjectId(id) }
           const result = await participantCollection.deleteOne(query);
@@ -337,6 +340,14 @@ async function run() {
           res.send(result);
         });
 
+        app.get("/participant-details/:campId", verifyToken , async (req, res) => {
+          const campId = req.params.campId;
+          const query = { _id: new ObjectId(campId) };
+          const result = await participantCollection.findOne(query);
+          res.send(result);
+          // console.log(result);
+        });
+
 
         //update user 
 
@@ -354,6 +365,111 @@ async function run() {
           // console.log('result', result);
           res.send(result);
         });
+
+        //getting user Registered Camps
+        app.get("/user-registered-camps", verifyToken, async (req, res) => {
+          const email = req.decoded.email;
+          const size = parseInt(req.query.size)
+          const page = parseInt(req.query.page) - 1
+          const search = req.query.search
+          let query = {
+            $and: [
+                { ParticipantEmail: email },
+                {
+                    $or: [
+                        { ParticipantName: { $regex: search, $options: 'i' } },
+                        { ParticipantEmail: { $regex: search, $options: 'i' } },
+                        { ParticipantPhone: { $regex: search, $options: 'i' } },
+                        { CampName: { $regex: search, $options: 'i' } },
+                        { CampFees: { $regex: search, $options: 'i' } },
+                        { PaymentStatus: { $regex: search, $options: 'i' } },
+                        { ConfirmationStatus: { $regex: search, $options: 'i' } },
+                    ],
+                },
+            ],
+        };
+
+        const camps = await participantCollection.find(query).skip(page * size).limit(size).toArray();
+        res.send(camps);
+        });
+
+        //user registered camps count for pagination
+        app.get("/user-registered-camps-count" , verifyToken , async (req, res)=>{
+          const email = req.decoded.email;
+
+          const search = req.query.search
+          let query = {
+            $and: [
+                { ParticipantEmail: email },
+                {
+                    $or: [
+                        { ParticipantName: { $regex: search, $options: 'i' } },
+                        { ParticipantEmail: { $regex: search, $options: 'i' } },
+                        { ParticipantPhone: { $regex: search, $options: 'i' } },
+                        { CampName: { $regex: search, $options: 'i' } },
+                        { CampFees: { $regex: search, $options: 'i' } },
+                        { PaymentStatus: { $regex: search, $options: 'i' } },
+                        { ConfirmationStatus: { $regex: search, $options: 'i' } },
+                    ],
+                },
+            ],
+        };
+
+        const count = await participantCollection.countDocuments(query);
+
+          res.send({ count });
+
+
+        }  );
+
+
+         // payment intent
+      app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      // console.log(amount, 'amount inside the intent')
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        description: 'Camp Fees Payment',
+        payment_method_types: ['card'],
+       
+         
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+      // console.log(paymentIntent.client_secret, 'client secret');
+
+      });
+
+
+      app.post('/payments', async (req, res) => {
+
+        const payment = req.body;
+        const query = { _id: new ObjectId(payment.participantId) }
+
+        // Update the PaymentStatus
+         const update = { $set: { PaymentStatus: 'Paid' } };
+          await participantCollection.updateOne(query, update);
+
+        const paymentResult = await paymentCollection.insertOne(payment);
+        // console.log(paymentResult);
+        res.send(paymentResult);
+
+      })
+
+
+      app.get('/payments/:email', verifyToken, async (req, res) => {
+        const query = { email: req.params.email }
+        if (req.params.email !== req.decoded.email) {
+          return res.status(403).send({ message: 'forbidden access' });
+        }
+        const result = await paymentCollection.find(query).toArray();
+        res.send(result);
+      })
   
          
   
