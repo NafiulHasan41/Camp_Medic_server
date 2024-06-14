@@ -69,6 +69,7 @@ async function run() {
       const campsCollection = client.db("MediCampDB").collection("medicalCamps");
       const participantCollection = client.db("MediCampDB").collection("Participant");
       const paymentCollection = client.db("MediCampDB").collection("payments");
+      const rattingCollection = client.db("MediCampDB").collection("ratting");
 
 
       // use verify admin after verifyToken
@@ -482,6 +483,26 @@ async function run() {
         const result = await paymentCollection.find(query).toArray();
         res.send(result);
       })
+
+      // ratting section
+      app.post("/ratting" , verifyToken , async (req, res) => {
+
+        const Reviewer = req.body;
+        if (Reviewer.ReviewerEmail !== req.decoded.email) {
+          return res.status(403).send({ message: 'forbidden access' });
+        }
+        const query = { ReviewerEmail: Reviewer.ReviewerEmail ,
+                      CampId: Reviewer.CampId
+                     }
+        const existingReviewer = await rattingCollection.findOne(query);
+        if(existingReviewer){
+          return res.send({ message: 'user already exists', insertedId: null })
+        }
+        const result = await rattingCollection.insertOne(Reviewer);
+        res.send(result);
+        // console.log(result);
+
+      });
   
          
   
