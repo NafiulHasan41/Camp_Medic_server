@@ -561,6 +561,15 @@ async function run() {
         const count = await paymentCollection.countDocuments(query);
         res.send({ count });
       });
+
+
+      // getting rating 
+         
+        app.get("/ratting", async (req, res) => {
+
+             const result = await rattingCollection.find().toArray();
+             res.send(result);
+        });
   
          
   
