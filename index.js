@@ -503,6 +503,64 @@ async function run() {
         // console.log(result);
 
       });
+
+      //getting payment history
+
+      app.get("/payment/:email", verifyToken, async (req, res) => {
+        const email = req.params.email;
+        const size = parseInt(req.query.size)
+        const page = parseInt(req.query.page) - 1
+        const search = req.query.search
+
+        if (email !== req.decoded.email) {
+          return res.status(403).send({ message: 'forbidden access' });
+        }
+
+        let query = {
+          $and: [
+              { email: email  },
+              {
+                  $or: [   
+                      
+                      { CampName: { $regex: search, $options: 'i' } },
+                      { price: { $regex: search, $options: 'i' } },
+                      { PaymentStatus: { $regex: search, $options: 'i' } },
+                      { ConfirmationStatus: { $regex: search, $options: 'i' } },
+                  ],
+              },
+          ],
+      };
+        const result = await paymentCollection.find(query).skip(page * size).limit(size).toArray();
+        res.send(result);
+      });
+
+
+      // getting count 
+
+      app.get("/payment_count/:email", verifyToken, async (req, res) => {
+        const email = req.params.email;
+        const search = req.query.search
+
+        if (email !== req.decoded.email) {
+          return res.status(403).send({ message: 'forbidden access' });
+        }
+
+        let query = {
+          $and: [
+              { email: email  },
+              {
+                  $or: [   
+                      { CampName: { $regex: search, $options: 'i' } },
+                      { price: { $regex: search, $options: 'i' } },
+                      { PaymentStatus: { $regex: search, $options: 'i' } },
+                      { ConfirmationStatus: { $regex: search, $options: 'i' } },
+                  ],
+              },
+          ],
+      };
+        const count = await paymentCollection.countDocuments(query);
+        res.send({ count });
+      });
   
          
   
