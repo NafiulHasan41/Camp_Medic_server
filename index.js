@@ -573,10 +573,11 @@ async function run() {
 
 
         app.get("/camps_data", verifyToken , verifyAdmin , async (req, res) => {
-
+          
+          const participantCount = await participantCollection.estimatedDocumentCount();
           const userCount = await userCollection.estimatedDocumentCount();
           const campCount = await campsCollection.estimatedDocumentCount();
-          const participantCount = await participantCollection.estimatedDocumentCount();
+          
 
                
           const PaymentData  = await paymentCollection.aggregate([
@@ -613,6 +614,64 @@ async function run() {
 
             // console.log(result);
             res.send({ userCount, campCount, participantCount, PaymentData , revenue });
+
+        });
+
+
+        // getting user data
+        app.get("/user_Data/:email" , verifyToken , async (req, res) => {
+            
+            
+          const email = req.params.email;
+          
+  
+          if (email !== req.decoded.email) {
+            return res.status(403).send({ message: 'forbidden access' });
+          }
+          const participantCount = await participantCollection.countDocuments({ ParticipantEmail: email });
+          const paymentCount = await paymentCollection.countDocuments({ email: email });
+          const unpaidCount = await participantCollection.countDocuments({ ParticipantEmail: email, PaymentStatus: "Unpaid" });
+          const participantDataCampParticipation = await participantCollection.find({ ParticipantEmail: email }, { CampName: 1, CampFees: 1 }).toArray();
+
+          const paymentPerDate = await paymentCollection.aggregate([
+            {
+                $match: { email: email }
+            },
+            {
+                $addFields: {
+                    convertedDate: {
+                        $toDate: "$date"
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: "%Y-%m-%d", date: "$convertedDate" }
+                    },
+                    totalPrice: { $sum: "$price" }
+                }
+            }
+        ]).toArray();
+
+        const paymentResult = await paymentCollection.aggregate([
+          {
+              $match: { email: email }
+          },
+          {
+              $group: {
+                  _id: null,
+                  totalRevenue: {
+                      $sum: '$price'
+                  }
+              }
+          }
+      ]).toArray();
+      
+      const totalPaid = paymentResult.length > 0 ? paymentResult[0].totalRevenue : 0;
+
+      res.send({ participantCount, paymentCount, unpaidCount, totalPaid , participantDataCampParticipation, paymentPerDate  });
+            
 
         });
   
