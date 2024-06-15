@@ -570,6 +570,51 @@ async function run() {
              const result = await rattingCollection.find().toArray();
              res.send(result);
         });
+
+
+        app.get("/camps_data", verifyToken , verifyAdmin , async (req, res) => {
+
+          const userCount = await userCollection.estimatedDocumentCount();
+          const campCount = await campsCollection.estimatedDocumentCount();
+          const participantCount = await participantCollection.estimatedDocumentCount();
+
+               
+          const PaymentData  = await paymentCollection.aggregate([
+            {
+                $addFields: {
+                    convertedDate: {
+                        $toDate: "$date"
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: "%Y-%m-%d", date: "$convertedDate" }
+                    },
+                    totalPrice: { $sum: "$price" }
+                }
+            }
+        ]).toArray();
+
+        //total revenue 
+        const result = await paymentCollection.aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevenue: {
+                $sum: '$price'
+              }
+            }
+          }
+        ]).toArray();
+  
+        const revenue = result.length > 0 ? result[0].totalRevenue : 0;
+
+            // console.log(result);
+            res.send({ userCount, campCount, participantCount, PaymentData , revenue });
+
+        });
   
          
   
