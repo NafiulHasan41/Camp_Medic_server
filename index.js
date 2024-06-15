@@ -14,8 +14,10 @@ const port = process.env.PORT || 4000;
 
 
 // middleware
-
-app.use(cors());
+const corsOptions = {
+  origin: ['http://localhost:5173', 'http://localhost:5174' , 'https://medical-campmanagement.web.app' ,'https://medical-campmanagement.firebaseapp.com'],
+}
+app.use(cors(corsOptions));
 app.use(express.json());
 
 
@@ -62,7 +64,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
       // Connect the client to the server	(optional starting in v4.7)
-      await client.connect();
+      // await client.connect();
   
   
       const userCollection = client.db("MediCampDB").collection("users");
@@ -169,7 +171,7 @@ async function run() {
             const size = parseInt(req.query.size)
             const page = parseInt(req.query.page) - 1
             const sort = req.query.sort
-            const search = req.query.search
+            const search = req.query.search ? req.query.search.toString() : ''
 
             let query = {
                 $or: [
@@ -201,7 +203,7 @@ async function run() {
           //getting camps count for pagination
 
           app.get("/camps_count" , async (req, res) => {
-            const search = req.query.search
+            const search = req.query.search ? req.query.search.toString() : ''
             let query = {
                 $or: [
                     { CampName: { $regex: search, $options: 'i' } },
@@ -273,7 +275,7 @@ async function run() {
           const size = parseInt(req.query.size)
           const page = parseInt(req.query.page) - 1
           const sort = req.query.sort
-          const search = req.query.search
+          const search = req.query.search ? req.query.search.toString() : ''
 
           let query = {
               $or: [
@@ -297,7 +299,7 @@ async function run() {
         //getting participants count for pagination
 
         app.get("/participant_count" ,verifyToken , verifyAdmin , async (req, res) => {
-          const search = req.query.search
+          const search = req.query.search ? req.query.search.toString() : ''
           let query = {
               $or: [
                   { ParticipantName: { $regex: search, $options: 'i' } },
@@ -384,7 +386,7 @@ async function run() {
           const email = req.decoded.email;
           const size = parseInt(req.query.size)
           const page = parseInt(req.query.page) - 1
-          const search = req.query.search
+          const search = req.query.search ? req.query.search.toString() : ''
           let query = {
             $and: [
                 { ParticipantEmail: email },
@@ -410,7 +412,7 @@ async function run() {
         app.get("/user-registered-camps-count" , verifyToken , async (req, res)=>{
           const email = req.decoded.email;
 
-          const search = req.query.search
+         const search = req.query.search ? req.query.search.toString() : ''
           let query = {
             $and: [
                 { ParticipantEmail: email },
@@ -683,8 +685,8 @@ async function run() {
 
   
       // Send a ping to confirm a successful connection
-      await client.db("admin").command({ ping: 1 });
-      console.log("Pinged your deployment. You successfully connected to MongoDB!");
+      // await client.db("admin").command({ ping: 1 });
+      // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
   
     
